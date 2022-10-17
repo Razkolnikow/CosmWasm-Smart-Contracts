@@ -75,22 +75,38 @@ pub mod exec {
         Ok(resp)
     }
 
-    pub fn withdraw_to(deps: DepsMut, env: Env, receiver: String, funds: Vec<Coin>) -> StdResult<Response> {
-        let balance = deps.querier.query_all_balances(&env.contract.address)?;
-        let mut send_amount = vec![Coin::new(0, "atom")];
-        if balance[0].amount >= Uint128::new(5) {
-            send_amount[0].amount = Uint128::new(5);
+    pub fn withdraw_to(deps: DepsMut, env: Env, info: MessageInfo, receiver: String, funds: Vec<Coin>) -> Result<Response, ContractError> {
+        let owner = OWNER.load(deps.storage)?;
+        if info.sender != owner {
+            return Err(ContractError::Unauthorized {
+                owner: owner.to_string(),
+            });
         }
+
+        let mut balance = deps.querier.query_all_balances(&env.contract.address)?;
+
+        if !funds.is_empty() {
+            for coin in &mut balance {
+                let limit = funds
+                    .iter()
+                    .find(|c| c.denom == coin.denom)
+                    .map(|c| c.amount)
+                    .unwrap_or(Uint128::zero());
+
+                coin.amount = std::cmp::min(coin.amount, limit);
+            }
+        }
+
         let bank_msg = BankMsg::Send {
-            to_address: receiver.to_string(),
-            amount: send_amount
+            to_address: receiver,
+            amount: balance,
         };
 
         let resp = Response::new()
             .add_message(bank_msg)
-            .add_attribute("action", "withdrawTo")
-            .add_attribute("sender", receiver.as_str());
-        
-        Ok(resp) 
+            .add_attribute("action", "withdraw")
+            .add_attribute("sender", info.sender.as_str());
+
+        Ok(resp)
     }
 }

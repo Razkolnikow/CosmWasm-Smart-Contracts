@@ -40,8 +40,7 @@ pub fn execute(
         WithdrawTo {
             receiver,
             funds
-        } => exec::withdraw_to(_deps, _env, receiver, funds)
-            .map_err(ContractError::Std),
+        } => exec::withdraw_to(_deps, _env, _info, receiver, funds),
         _ => Ok(Response::new()),
     }
 }
