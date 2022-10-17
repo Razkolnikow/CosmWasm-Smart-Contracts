@@ -91,6 +91,6 @@ pub mod exec {
             .add_attribute("action", "withdrawTo")
             .add_attribute("sender", receiver.as_str());
         
-        Ok(resp)
+        Ok(resp) 
     }
 }
