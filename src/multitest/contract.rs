@@ -1,9 +1,9 @@
-use cosmwasm_std::{Addr, Coin, StdResult};
+use cosmwasm_std::{Addr, Coin, StdResult, StdError, Empty};
 use cw_multi_test::{App, ContractWrapper, Executor};
 
 use crate::error::ContractError;
 use crate::msg::{ExecMsg, InstantiateMsg, QueryMsg, ValueResp};
-use crate::{execute, instantiate, query};
+use crate::{execute, instantiate, query, migrate};
 pub struct CountingContract(Addr);
 
 impl CountingContract {
@@ -12,7 +12,7 @@ impl CountingContract {
     }
 
     pub fn store_code(app: &mut App) -> u64 {
-        let contract = ContractWrapper::new(execute, instantiate, query);
+        let contract = ContractWrapper::new(execute, instantiate, query).with_migrate(migrate);
         app.store_code(Box::new(contract))
     }
 
@@ -21,6 +21,7 @@ impl CountingContract {
         app: &mut App,
         code_id: u64,
         sender: &Addr,
+        admin: Option<&Addr>,
         label: &str,
         counter: impl Into<Option<u64>>,
         minimal_donation: Coin,
@@ -36,10 +37,18 @@ impl CountingContract {
             },
             &[],
             label,
-            None,
+            admin.map(Addr::to_string),
         )
         .map(CountingContract)
         .map_err(|err| err.downcast().unwrap())
+    }
+
+    #[track_caller]
+    pub fn migrate(app: &mut App, sender: &Addr, contract: &Addr, new_code_id: u64) -> StdResult<Self> {
+        app.migrate_contract(sender.clone(), contract.clone(), &Empty {}, new_code_id)
+            .map_err(|err| err.downcast::<StdError>().unwrap())?;
+
+        Ok(CountingContract(contract.clone()))
     }
 
     #[track_caller]

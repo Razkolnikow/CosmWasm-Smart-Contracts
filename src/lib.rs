@@ -2,7 +2,7 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 
-use cosmwasm_std::{to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult};
+use cosmwasm_std::{to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult, Empty};
 use msg::InstantiateMsg;
 use error::ContractError;
 
@@ -43,6 +43,11 @@ pub fn execute(
         } => exec::withdraw_to(_deps, _env, _info, receiver, funds),
         _ => Ok(Response::new()),
     }
+}
+
+#[cfg_attr(not(feature = "library"), entry_point)]
+pub fn migrate(deps: DepsMut, _env: Env, _msg: Empty) -> StdResult<Response> {
+    contract::migrate(deps)
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
