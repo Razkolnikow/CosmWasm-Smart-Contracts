@@ -1,7 +1,8 @@
 use cosmwasm_std::{DepsMut, StdResult, Response, MessageInfo, Coin};
-use cw2::set_contract_version;
+use cw2::{set_contract_version, get_contract_version};
 use cw_storage_plus::Item;
 
+use crate::error::ContractError;
 use crate::{msg::InstantiateMsg, state::{OWNER, STATE, State}};
 
 const CONTRACT_NAME: &str = env!("CARGO_PKG_NAME");
@@ -16,7 +17,7 @@ pub fn instantiate(deps: DepsMut, info:MessageInfo, msg: InstantiateMsg) -> StdR
     Ok(Response::new())
 }
 
-pub fn migrate(deps: DepsMut) -> StdResult<Response> {
+pub fn migrate_0_1_0(deps: DepsMut) -> StdResult<Response> {
     const COUNTER: Item<u64> = Item::new("counter");
     const MINIMAL_DONATION: Item<Coin> = Item::new("minimal_donation");
 
@@ -31,6 +32,30 @@ pub fn migrate(deps: DepsMut) -> StdResult<Response> {
     )?;
 
     Ok(Response::new())
+}
+
+pub fn migrate(mut deps: DepsMut) -> Result<Response, ContractError> {
+    let contract_version = get_contract_version(deps.storage)?;
+
+    if contract_version.contract != CONTRACT_NAME {
+        return  Err(ContractError::InvalidContract {
+            contract: contract_version.contract,
+        });
+    }
+
+    let resp = match contract_version.version.as_str() {
+        "0.1.0" => migrate_0_1_0(deps.branch()).map_err(ContractError::from)?,
+        CONTRACT_VERSION => return Ok(Response::default()),
+        version => {
+            return Err(ContractError::InvalidContractVersion { 
+                version: version.into(), 
+            })
+        }
+    };
+
+    set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
+
+    Ok(resp)
 }
 
 pub mod query {
