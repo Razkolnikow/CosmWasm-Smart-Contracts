@@ -1,11 +1,15 @@
 use cosmwasm_std::{DepsMut, StdResult, Response, MessageInfo, Coin};
+use cw2::set_contract_version;
 use cw_storage_plus::Item;
 
 use crate::{msg::InstantiateMsg, state::{OWNER, STATE, State}};
 
-
+const CONTRACT_NAME: &str = env!("CARGO_PKG_NAME");
+const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 pub fn instantiate(deps: DepsMut, info:MessageInfo, msg: InstantiateMsg) -> StdResult<Response> {
+    set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
+
     STATE.save(deps.storage, &State { counter: 0, minimal_donation: msg.minimal_donation })?;
     OWNER.save(deps.storage, &info.sender)?;
 
