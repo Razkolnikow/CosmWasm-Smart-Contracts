@@ -2,7 +2,7 @@ use cosmwasm_std::{Addr, Coin, StdResult, StdError, Empty};
 use cw_multi_test::{App, ContractWrapper, Executor};
 
 use crate::error::ContractError;
-use crate::msg::{ExecMsg, InstantiateMsg, QueryMsg, ValueResp};
+use crate::msg::{ExecMsg, InstantiateMsg, QueryMsg, ValueResp, Parent};
 use crate::{execute, instantiate, query, migrate};
 pub struct CountingContract(Addr);
 
@@ -25,8 +25,10 @@ impl CountingContract {
         label: &str,
         counter: impl Into<Option<u64>>,
         minimal_donation: Coin,
+        parent: impl Into<Option<Parent>>,
     ) -> StdResult<Self> {
         let counter = counter.into().unwrap_or_default();
+        let parent = parent.into();
 
         app.instantiate_contract(
             code_id,
@@ -34,6 +36,7 @@ impl CountingContract {
             &InstantiateMsg {
                 counter,
                 minimal_donation,
+                parent,
             },
             &[],
             label,

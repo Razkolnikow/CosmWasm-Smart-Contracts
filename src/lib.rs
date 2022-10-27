@@ -34,7 +34,7 @@ pub fn execute(
     use msg::ExecMsg::*;
 
     match _msg {
-        Donate {} => exec::donate(_deps, _info)
+        Donate {} => exec::donate(_deps, _env, _info)
             .map_err(ContractError::Std),
         Withdraw {} => exec::withdraw(_deps, _env, _info),
         WithdrawTo {
